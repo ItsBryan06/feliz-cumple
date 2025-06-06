@@ -231,7 +231,7 @@ export default function BirthdayPage() {
               <CardContent className="p-6 text-center space-y-4">
                 <Camera className="w-12 h-12 text-pink-500 mx-auto" />
                 <h4 className="text-xl font-semibold text-gray-800">Galería</h4>
-                <p className="text-gray-600">Nuestras fotos favoritas</p>
+                <p className="text-gray-600">Un par de fotitos tuyas uwu</p>
               </CardContent>
             </Card>
             <a href="https://open.spotify.com/playlist/3CiSWkJdAzDxxpTyR1L4Vv?si=w-jhjqAMQ6yDlL7PV6UOwA&pi=LFSdKfLEQkSqA">
