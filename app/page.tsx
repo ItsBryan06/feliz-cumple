@@ -8,13 +8,17 @@ import Image from "next/image"
 import DaysCounter from "@/components/days-counter"
 import PhotoGalleryModal from "@/components/photo-gallery-modal"
 import SpotifyPlayer from "@/components/spotify-player"
+import Fireworks from "@/components/fireworks"
+import TypewriterText from "@/components/typewriter-text"
 
 export default function BirthdayPage() {
   const [showMessage, setShowMessage] = useState(false)
   const [currentPhoto, setCurrentPhoto] = useState(0)
   const [floatingHearts, setFloatingHearts] = useState<number[]>([])
   const [isGalleryOpen, setIsGalleryOpen] = useState(false)
-
+  const [showFireworks, setShowFireworks] = useState(false)
+  const [showTitle, setShowTitle] = useState(false)
+  const [showText, setShowText] = useState(false)
     // ID de la canción de Spotify (reemplaza con tu canción preferida)
   const spotifyTrackId = "2HRgqmZQC0MC7GeNuDIXHN?si=W8vgov2NTFaR97l6qFNXpw" // "All of Me" de John Legend como ejemplo
 
@@ -37,6 +41,10 @@ export default function BirthdayPage() {
     { date: "----", title: "Nuestro lindo apartamento", description: "Muy pronto ya estaremos viviendo juntos con nuestro lindo apartamento uwu." },
     { date: "Indefinido", title: "Página web de nuestras salidas?", description: "Y aquí pondremos todas las futuras cosas que haremos uwu" },
   ]
+
+  const messageTitle = "Un regalito de mi parte mi princesa"
+  const messageText = "Te amo muchísimo amor. Quiero recordarte lo increíble que eres y lo afortunado que me siento de tenerte en mi vida. Eres una grandísima mujer y una grandísima novia. Me siento orgulloso de ti y de todo el esfuerzo que pones para mejorar cada día. Te amo mucho mi amor. Feliz cumpleaños"
+
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentPhoto((prev) => (prev + 1) % photos.length)
@@ -59,9 +67,30 @@ export default function BirthdayPage() {
     }
   }
 
+  const handleOpenGift = () => {
+    setShowMessage(true)
+    setShowFireworks(true)
+    createFloatingHearts()
+
+    // Mostrar título después de un pequeño retraso
+    setTimeout(() => {
+      setShowTitle(true)
+    }, 500)
+  }
+
+  const handleTitleComplete = () => {
+    // Mostrar texto después de completar el título
+    setTimeout(() => {
+      setShowText(true)
+    }, 300)
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-blue-50 relative overflow-hidden">
       {/* Floating Hearts Animation */}
+      
+      <Fireworks isActive={showFireworks} duration={4000} />
+
       {floatingHearts.map((heart) => (
         <div
           key={heart}
@@ -105,9 +134,7 @@ export default function BirthdayPage() {
           </div>
 
           <Button
-            onClick={() => {
-              setShowMessage(true)
-            }}
+            onClick={handleOpenGift}
             className="bg-gradient-to-r from-pink-400 to-purple-400 hover:from-pink-500 hover:to-purple-500 text-white px-8 py-4 rounded-full text-lg font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
           >
             <Gift className="w-5 h-5 mr-2" />
@@ -115,35 +142,41 @@ export default function BirthdayPage() {
           </Button>
         </div>
       </section>
-
-      {/* Love Message */}
+ {/* Love Message with Typewriter Effect */}
       {showMessage && (
         <section className="py-16 px-4 animate-fade-in">
           <Card className="max-w-2xl mx-auto bg-white/80 backdrop-blur-sm border-0 shadow-2xl">
             <CardContent className="p-8 text-center space-y-6">
               <Sparkles className="w-12 h-12 text-yellow-400 mx-auto animate-bounce" />
-              <h3 className="text-2xl md:text-3xl font-bold text-gray-800">Un regalito de mi parte mi princesa </h3>
-              <p className="text-gray-600 leading-relaxed text-lg">
-                Te amo muchísimo amor. Quiero recordarte lo increíble que eres y lo afortunado que me siento de
-                tenerte en mi vida. Eres una grandísima mujer y una grandísima novia. Me siento orgulloso de ti
-                y de todo el esfuerzo que pones para mejorar cada día. Te amo mucho mi amor. Feliz cumpleaños
-              </p>
-              <div className="flex justify-center space-x-4">
-                <Heart className="w-6 h-6 text-red-400 fill-red-400 animate-pulse" />
-                <Heart
-                  className="w-6 h-6 text-pink-400 fill-pink-400 animate-pulse"
-                  style={{ animationDelay: "0.5s" }}
-                />
-                <Heart
-                  className="w-6 h-6 text-purple-400 fill-purple-400 animate-pulse"
-                  style={{ animationDelay: "1s" }}
-                />
+
+              {/* Título con efecto typewriter */}
+              <h3 className="text-2xl md:text-3xl font-bold text-gray-800 min-h-[2.5rem]">
+                {showTitle && <TypewriterText text={messageTitle} speed={80} onComplete={handleTitleComplete} />}
+              </h3>
+
+              {/* Texto con efecto typewriter */}
+              <div className="text-gray-600 leading-relaxed text-lg min-h-[6rem]">
+                {showText && <TypewriterText text={messageText} speed={30} />}
               </div>
+
+              {/* Corazones animados - aparecen después del texto */}
+              {showText && (
+                <div className="flex justify-center space-x-4 animate-fade-in">
+                  <Heart className="w-6 h-6 text-red-400 fill-red-400 animate-pulse" />
+                  <Heart
+                    className="w-6 h-6 text-pink-400 fill-pink-400 animate-pulse"
+                    style={{ animationDelay: "0.5s" }}
+                  />
+                  <Heart
+                    className="w-6 h-6 text-purple-400 fill-purple-400 animate-pulse"
+                    style={{ animationDelay: "1s" }}
+                  />
+                </div>
+              )}
             </CardContent>
           </Card>
         </section>
       )}
-
               <section className="py-12 px-4">
         <div className="max-w-md mx-auto">
           <DaysCounter startDate="2025-03-10" />
