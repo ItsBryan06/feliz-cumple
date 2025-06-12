@@ -11,6 +11,7 @@ import SpotifyPlayer from "@/components/spotify-player"
 import Fireworks from "@/components/fireworks"
 import TypewriterText from "@/components/typewriter-text"
 
+  //Constantes usadas en la página
 export default function BirthdayPage() {
   const [showMessage, setShowMessage] = useState(false)
   const [currentPhoto, setCurrentPhoto] = useState(0)
@@ -19,9 +20,9 @@ export default function BirthdayPage() {
   const [showFireworks, setShowFireworks] = useState(false)
   const [showTitle, setShowTitle] = useState(false)
   const [showText, setShowText] = useState(false)
-    // ID de la canción de Spotify (reemplaza con tu canción preferida)
-  const spotifyTrackId = "2HRgqmZQC0MC7GeNuDIXHN?si=W8vgov2NTFaR97l6qFNXpw" // "All of Me" de John Legend como ejemplo
+  const spotifyTrackId = "2HRgqmZQC0MC7GeNuDIXHN?si=W8vgov2NTFaR97l6qFNXpw" 
 
+    //Array de fotos para la galería
   const photos = [
     "/portada.jpg",
     "/foto-1.jpg",
@@ -30,18 +31,21 @@ export default function BirthdayPage() {
     "/foto-4.jpg",
     "/foto-5.png",
   ]
+    //Array de la zona de memorias
   const memories = [
     { date: "Febrero 2025", title: "Nuestra primera charla", description: "Hola, vendo pan" },
     { date: "Marzo 2025", title: "Oficialmente novios", description: "Un cálido 10 de marzo." },
     { date: "Abril 2025", title: "Primer mes juntos", description: "Apenas estamos empezando en este camino, pero cada día me siento tan feliz contigo a mi lado <3" },
   ]
 
+  //Array de la zona de futuros proyectos
     const news = [
     { date: "2026", title: "Año de nuestro encuentro", description: "El año en el que viajaré para visitarte y saldremos a comer, dormiremos juntos, pasearemos de un sitio a otro <3" },
     { date: "----", title: "Nuestro lindo apartamento", description: "Muy pronto ya estaremos viviendo juntos con nuestro lindo apartamento uwu." },
     { date: "Indefinido", title: "Página web de nuestras salidas?", description: "Y aquí pondremos todas las futuras cosas que haremos uwu" },
   ]
 
+    //Mensaje de la carta
   const messageTitle = "Un regalito de mi parte mi princesa"
   const messageText = "Te amo muchísimo amor. Quiero recordarte lo increíble que eres y lo afortunado que me siento de tenerte en mi vida. Eres una grandísima mujer y una grandísima novia. Me siento orgulloso de ti y de todo el esfuerzo que pones para mejorar cada día. Te amo mucho mi amor. Feliz cumpleaños"
 
@@ -67,6 +71,7 @@ export default function BirthdayPage() {
     }
   }
 
+    //Validar si está abierto el regalo o no
   const handleOpenGift = () => {
     setShowMessage(true)
     setShowFireworks(true)
@@ -105,7 +110,7 @@ export default function BirthdayPage() {
         </div>
       ))}
 
-      {/* Hero Section */}
+      {/* Sección  */}
       <section className="relative min-h-screen flex items-center justify-center px-4">
         <div className="text-center space-y-8 max-w-4xl mx-auto">
           <div className="space-y-4">
