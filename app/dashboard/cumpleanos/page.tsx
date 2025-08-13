@@ -25,18 +25,40 @@ export default function CumpleanosPage() {
   // ID de la canción de Spotify
   const spotifyTrackId = "4cOdK2wGLETKBW3PvgPWqT"
 
-  const photos = ["/foto-portada.jpg", "/foto2.jpg", "/foto3.jpg", "/foto4.jpg"]
+  const photos = ["/portada.jpg", "/foto-1.jpg", "/foto-2.jpg", "/foto-3.jpg", "/foto-4.jpg", "/foto-5.png"]
 
   const memories = [
-    { date: "Enero 2023", title: "Nuestro primer encuentro", description: "El día que cambió todo" },
-    { date: "Marzo 2023", title: "Primera cita oficial", description: "Cena bajo las estrellas" },
-    { date: "Junio 2023", title: "Primer viaje juntos", description: "Aventuras inolvidables" },
-    { date: "Diciembre 2023", title: "Nuestro primer año", description: "Celebrando el amor" },
+    { date: "Febrero 2025", title: "Nuestra primera charla", description: "Hola, vendo pan" },
+    { date: "Marzo 2025", title: "Oficialmente novios", description: "Un cálido 10 de marzo." },
+    {
+      date: "Abril 2025",
+      title: "Primer mes juntos",
+      description: "Apenas estamos empezando en este camino, pero cada día me siento tan feliz contigo a mi lado <3",
+    },
   ]
 
-  const messageTitle = "Para la persona más especial"
+  const news = [
+    {
+      date: "2026",
+      title: "Año de nuestro encuentro",
+      description:
+        "El año en el que viajaré para visitarte y saldremos a comer, dormiremos juntos, pasearemos de un sitio a otro <3",
+    },
+    {
+      date: "----",
+      title: "Nuestro lindo apartamento",
+      description: "Muy pronto ya estaremos viviendo juntos con nuestro lindo apartamento uwu.",
+    },
+    {
+      date: "Indefinido",
+      title: "Página web de nuestras salidas?",
+      description: "Y aquí pondremos todas las futuras cosas que haremos uwu",
+    },
+  ]
+
+  const messageTitle = "Un regalito de mi parte mi princesa"
   const messageText =
-    "En este día tan especial, quiero recordarte lo increíble que eres y lo afortunado que me siento de tenerte en mi vida. Cada día contigo es una nueva aventura llena de amor, risas y momentos inolvidables."
+    "Te amo muchísimo amor. Quiero recordarte lo increíble que eres y lo afortunado que me siento de tenerte en mi vida. Eres una grandísima mujer y una grandísima novia. Me siento orgulloso de ti y de todo el esfuerzo que pones para mejorar cada día. Te amo mucho mi amor. Feliz cumpleaños"
 
   useEffect(() => {
     const isAuthenticated = localStorage.getItem("isAuthenticated")
@@ -211,6 +233,42 @@ export default function CumpleanosPage() {
                           <p className="text-gray-600 mt-1">{memory.description}</p>
                         </div>
                         <span className="text-sm text-purple-500 font-medium mt-2 md:mt-0">{memory.date}</span>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Future Projects Timeline */}
+      <section className="py-16 px-4">
+        <div className="max-w-4xl mx-auto">
+          <h3 className="text-3xl md:text-4xl font-bold text-center mb-12 bg-gradient-to-r from-blue-400 to-green-400 bg-clip-text text-transparent">
+            Nuestros Futuros Proyectos
+          </h3>
+          <div className="space-y-8">
+            {news.map((project, index) => (
+              <Card
+                key={index}
+                className="bg-white/70 backdrop-blur-sm border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+              >
+                <CardContent className="p-6">
+                  <div className="flex items-start space-x-4">
+                    <div className="flex-shrink-0">
+                      <div className="w-12 h-12 bg-gradient-to-r from-blue-400 to-green-400 rounded-full flex items-center justify-center">
+                        <Sparkles className="w-6 h-6 text-white" />
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+                        <div>
+                          <h4 className="text-xl font-semibold text-gray-800">{project.title}</h4>
+                          <p className="text-gray-600 mt-1">{project.description}</p>
+                        </div>
+                        <span className="text-sm text-blue-500 font-medium mt-2 md:mt-0">{project.date}</span>
                       </div>
                     </div>
                   </div>
