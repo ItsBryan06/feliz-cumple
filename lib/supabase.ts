@@ -1,7 +1,8 @@
 import { createClient } from "@supabase/supabase-js"
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+const supabaseUrl = "https://esyshgsmiuamfwchqagp.supabase.co"
+const supabaseAnonKey =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVzeXNoZ3NtaXVhbWZ3Y2hxYWdwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUxMzUwNDgsImV4cCI6MjA3MDcxMTA0OH0.CL6cbYKqUjav-p_p5b8X1E3SeVoeAi4rObvNA8LtRZM"
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
@@ -78,25 +79,49 @@ export async function migrateLocalStorageToSupabase(): Promise<void> {
 
     if (localMessages.length === 0) return
 
+    // Verificar si ya existen mensajes en Supabase para evitar duplicados
+    const existingMessages = await getMessages()
+    if (existingMessages.length > 0) {
+      console.log("Messages already exist in Supabase, skipping migration")
+      return
+    }
+
     // Convertir formato de localStorage a formato de Supabase
     const messagesToInsert = localMessages.map((msg: any) => ({
-      id: msg.id,
       title: msg.title,
       content: msg.content,
       author: msg.author,
       created_at: new Date(`${msg.date} ${msg.time}`).toISOString(),
     }))
 
-    const { error } = await supabase.from("messages").upsert(messagesToInsert, { onConflict: "id" })
+    const { error } = await supabase.from("messages").insert(messagesToInsert)
 
     if (error) {
       console.error("Error migrating messages:", error)
     } else {
       console.log("Messages migrated successfully!")
-      // Opcional: limpiar localStorage después de la migración
-      // localStorage.removeItem('messages')
+      // Marcar migración como completada
+      localStorage.setItem("migrated_to_supabase", "true")
     }
   } catch (error) {
     console.error("Error during migration:", error)
+  }
+}
+
+// Función para verificar la conexión con Supabase
+export async function testSupabaseConnection(): Promise<boolean> {
+  try {
+    const { data, error } = await supabase.from("messages").select("count", { count: "exact" }).limit(1)
+
+    if (error) {
+      console.error("Supabase connection test failed:", error)
+      return false
+    }
+
+    console.log("Supabase connection successful!")
+    return true
+  } catch (error) {
+    console.error("Supabase connection test error:", error)
+    return false
   }
 }

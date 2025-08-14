@@ -13,6 +13,6 @@ CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(created_at DESC);
 -- Habilitar Row Level Security (RLS)
 ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
 
--- Crear política para permitir todas las operaciones (puedes ajustar esto según tus necesidades de seguridad)
+-- Crear política para permitir todas las operaciones
 CREATE POLICY "Allow all operations on messages" ON messages
   FOR ALL USING (true);

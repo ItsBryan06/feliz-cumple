@@ -9,13 +9,14 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog"
-import { Plus, Edit, Trash2, Heart, Calendar, RefreshCw } from "lucide-react"
+import { Plus, Edit, Trash2, Heart, Calendar, RefreshCw, Wifi, WifiOff } from "lucide-react"
 import {
   getMessages,
   createMessage,
   updateMessage,
   deleteMessage,
   migrateLocalStorageToSupabase,
+  testSupabaseConnection,
   type Message,
 } from "@/lib/supabase"
 
@@ -27,6 +28,7 @@ export default function DiarioPage() {
   const [formData, setFormData] = useState({ title: "", content: "" })
   const [isLoading, setIsLoading] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const [isConnected, setIsConnected] = useState(true)
   const router = useRouter()
 
   useEffect(() => {
@@ -39,13 +41,29 @@ export default function DiarioPage() {
     }
 
     setUser(currentUser)
-    loadMessages()
-
-    // Migrar datos de localStorage si es necesario
-    migrateLocalStorageToSupabase().then(() => {
-      loadMessages() // Recargar después de la migración
-    })
+    initializeData()
   }, [router])
+
+  const initializeData = async () => {
+    // Verificar conexión con Supabase
+    const connected = await testSupabaseConnection()
+    setIsConnected(connected)
+
+    if (connected) {
+      // Migrar datos de localStorage si es necesario
+      const migrated = localStorage.getItem("migrated_to_supabase")
+      if (!migrated) {
+        await migrateLocalStorageToSupabase()
+      }
+
+      // Cargar mensajes desde Supabase
+      await loadMessages()
+    } else {
+      console.warn("No se pudo conectar con Supabase, usando datos locales")
+      // Fallback a localStorage si no hay conexión
+      loadLocalMessages()
+    }
+  }
 
   const loadMessages = async () => {
     setIsLoading(true)
@@ -54,8 +72,24 @@ export default function DiarioPage() {
       setMessages(fetchedMessages)
     } catch (error) {
       console.error("Error loading messages:", error)
+      setIsConnected(false)
+      loadLocalMessages()
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const loadLocalMessages = () => {
+    try {
+      const localMessages = JSON.parse(localStorage.getItem("messages") || "[]")
+      const formattedMessages = localMessages.map((msg: any) => ({
+        ...msg,
+        created_at: new Date(`${msg.date} ${msg.time}`).toISOString(),
+      }))
+      setMessages(formattedMessages.reverse())
+    } catch (error) {
+      console.error("Error loading local messages:", error)
+      setMessages([])
     }
   }
 
@@ -79,6 +113,7 @@ export default function DiarioPage() {
       }
     } catch (error) {
       console.error("Error saving message:", error)
+      setIsConnected(false)
     } finally {
       setIsSaving(false)
     }
@@ -93,6 +128,7 @@ export default function DiarioPage() {
         }
       } catch (error) {
         console.error("Error deleting message:", error)
+        setIsConnected(false)
       }
     }
   }
@@ -141,10 +177,20 @@ export default function DiarioPage() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-pink-400 to-purple-400 bg-clip-text text-transparent">
-              Nuestro Diario 💕
-            </h1>
-            <p className="text-gray-600 mt-1">Nuestros pensamientos y recuerdos especiales</p>
+            <div className="flex items-center gap-2">
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-pink-400 to-purple-400 bg-clip-text text-transparent">
+                Nuestro Diario 💕
+              </h1>
+              {isConnected ? (
+                <Wifi className="w-5 h-5 text-green-500" title="Conectado a Supabase" />
+              ) : (
+                <WifiOff className="w-5 h-5 text-red-500" title="Sin conexión - usando datos locales" />
+              )}
+            </div>
+            <p className="text-gray-600 mt-1">
+              Nuestros pensamientos y recuerdos especiales
+              {!isConnected && " (modo offline)"}
+            </p>
           </div>
 
           <div className="flex gap-2">
@@ -204,6 +250,21 @@ export default function DiarioPage() {
             </Dialog>
           </div>
         </div>
+
+        {/* Estado de conexión */}
+        {!isConnected && (
+          <Card className="bg-yellow-50 border-yellow-200">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 text-yellow-800">
+                <WifiOff className="w-5 h-5" />
+                <p className="text-sm">
+                  <strong>Modo offline:</strong> No se pudo conectar con la base de datos. Los cambios se guardarán
+                  localmente.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Lista de mensajes agrupados por fecha */}
         {isLoading ? (
