@@ -6,7 +6,25 @@ import DashboardLayout from "@/components/dashboard-layout"
 import DaysCounter from "@/components/days-counter"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { MessageSquare, Calendar, Heart } from "lucide-react"
-import { getMessages, migrateLocalStorageToSupabase, type Message } from "@/lib/supabase"
+
+// Importar funciones con fallback
+let supabaseFunctions: any
+try {
+  supabaseFunctions = require("@/lib/supabase")
+} catch (error) {
+  console.warn("Supabase not available, using localStorage fallback")
+  supabaseFunctions = require("@/lib/supabase-fallback")
+}
+
+const { getMessages } = supabaseFunctions
+
+interface Message {
+  id: string
+  title: string
+  content: string
+  author: string
+  created_at: string
+}
 
 export default function DashboardPage() {
   const [user, setUser] = useState("")
@@ -36,10 +54,7 @@ export default function DashboardPage() {
     setUser(currentUser)
     setDaysTogether(calculateDaysTogether())
 
-    // Migrar datos de localStorage a Supabase si es necesario
-    migrateLocalStorageToSupabase()
-
-    // Cargar mensajes recientes desde Supabase
+    // Cargar mensajes recientes
     loadRecentMessages()
   }, [router])
 
