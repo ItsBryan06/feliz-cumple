@@ -9,16 +9,15 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog"
-import { Plus, Edit, Trash2, Heart, Calendar } from "lucide-react"
-
-interface Message {
-  id: string
-  title: string
-  content: string
-  author: string
-  date: string
-  time: string
-}
+import { Plus, Edit, Trash2, Heart, Calendar, RefreshCw } from "lucide-react"
+import {
+  getMessages,
+  createMessage,
+  updateMessage,
+  deleteMessage,
+  migrateLocalStorageToSupabase,
+  type Message,
+} from "@/lib/supabase"
 
 export default function DiarioPage() {
   const [messages, setMessages] = useState<Message[]>([])
@@ -26,6 +25,8 @@ export default function DiarioPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingMessage, setEditingMessage] = useState<Message | null>(null)
   const [formData, setFormData] = useState({ title: "", content: "" })
+  const [isLoading, setIsLoading] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
@@ -39,45 +40,61 @@ export default function DiarioPage() {
 
     setUser(currentUser)
     loadMessages()
+
+    // Migrar datos de localStorage si es necesario
+    migrateLocalStorageToSupabase().then(() => {
+      loadMessages() // Recargar después de la migración
+    })
   }, [router])
 
-  const loadMessages = () => {
-    const savedMessages = JSON.parse(localStorage.getItem("messages") || "[]")
-    setMessages(savedMessages.reverse()) // Mostrar más recientes primero
+  const loadMessages = async () => {
+    setIsLoading(true)
+    try {
+      const fetchedMessages = await getMessages()
+      setMessages(fetchedMessages)
+    } catch (error) {
+      console.error("Error loading messages:", error)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
-  const saveMessage = () => {
+  const saveMessage = async () => {
     if (!formData.title.trim() || !formData.content.trim()) return
 
-    const now = new Date()
-    const newMessage: Message = {
-      id: editingMessage?.id || Date.now().toString(),
-      title: formData.title,
-      content: formData.content,
-      author: user,
-      date: now.toLocaleDateString("es-ES"),
-      time: now.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" }),
+    setIsSaving(true)
+    try {
+      let result
+      if (editingMessage) {
+        result = await updateMessage(editingMessage.id, formData.title, formData.content)
+      } else {
+        result = await createMessage(formData.title, formData.content, user)
+      }
+
+      if (result) {
+        await loadMessages() // Recargar la lista
+        setFormData({ title: "", content: "" })
+        setEditingMessage(null)
+        setIsDialogOpen(false)
+      }
+    } catch (error) {
+      console.error("Error saving message:", error)
+    } finally {
+      setIsSaving(false)
     }
-
-    let updatedMessages
-    if (editingMessage) {
-      updatedMessages = messages.map((msg) => (msg.id === editingMessage.id ? newMessage : msg))
-    } else {
-      updatedMessages = [newMessage, ...messages]
-    }
-
-    setMessages(updatedMessages)
-    localStorage.setItem("messages", JSON.stringify(updatedMessages.reverse()))
-
-    setFormData({ title: "", content: "" })
-    setEditingMessage(null)
-    setIsDialogOpen(false)
   }
 
-  const deleteMessage = (id: string) => {
-    const updatedMessages = messages.filter((msg) => msg.id !== id)
-    setMessages(updatedMessages)
-    localStorage.setItem("messages", JSON.stringify(updatedMessages.reverse()))
+  const handleDeleteMessage = async (id: string) => {
+    if (window.confirm("¿Estás seguro de que quieres eliminar este mensaje?")) {
+      try {
+        const success = await deleteMessage(id)
+        if (success) {
+          await loadMessages() // Recargar la lista
+        }
+      } catch (error) {
+        console.error("Error deleting message:", error)
+      }
+    }
   }
 
   const startEdit = (message: Message) => {
@@ -86,13 +103,31 @@ export default function DiarioPage() {
     setIsDialogOpen(true)
   }
 
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString)
+    return date.toLocaleDateString("es-ES", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    })
+  }
+
+  const formatTime = (dateString: string) => {
+    const date = new Date(dateString)
+    return date.toLocaleTimeString("es-ES", {
+      hour: "2-digit",
+      minute: "2-digit",
+    })
+  }
+
   const groupMessagesByDate = (messages: Message[]) => {
     const groups: { [key: string]: Message[] } = {}
     messages.forEach((message) => {
-      if (!groups[message.date]) {
-        groups[message.date] = []
+      const date = formatDate(message.created_at)
+      if (!groups[date]) {
+        groups[date] = []
       }
-      groups[message.date].push(message)
+      groups[date].push(message)
     })
     return groups
   }
@@ -112,58 +147,73 @@ export default function DiarioPage() {
             <p className="text-gray-600 mt-1">Nuestros pensamientos y recuerdos especiales</p>
           </div>
 
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button
-                className="bg-gradient-to-r from-pink-400 to-purple-400 hover:from-pink-500 hover:to-purple-500"
-                onClick={() => {
-                  setEditingMessage(null)
-                  setFormData({ title: "", content: "" })
-                }}
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Agregar mensajito
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-md">
-              <DialogHeader>
-                <DialogTitle>{editingMessage ? "Editar mensaje" : "Nuevo mensaje"}</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="title">Título</Label>
-                  <Input
-                    id="title"
-                    value={formData.title}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    placeholder="Título del mensaje..."
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="content">Mensaje</Label>
-                  <Textarea
-                    id="content"
-                    value={formData.content}
-                    onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                    placeholder="Escribe tu mensaje aquí..."
-                    rows={4}
-                  />
-                </div>
-              </div>
-              <DialogFooter>
+          <div className="flex gap-2">
+            <Button onClick={loadMessages} variant="outline" size="sm" disabled={isLoading} className="bg-white/80">
+              <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? "animate-spin" : ""}`} />
+              {isLoading ? "Cargando..." : "Actualizar"}
+            </Button>
+
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
                 <Button
-                  onClick={saveMessage}
                   className="bg-gradient-to-r from-pink-400 to-purple-400 hover:from-pink-500 hover:to-purple-500"
+                  onClick={() => {
+                    setEditingMessage(null)
+                    setFormData({ title: "", content: "" })
+                  }}
                 >
-                  {editingMessage ? "Actualizar" : "Agregar al diario"}
+                  <Plus className="w-4 h-4 mr-2" />
+                  Agregar mensajito
                 </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>{editingMessage ? "Editar mensaje" : "Nuevo mensaje"}</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="title">Título</Label>
+                    <Input
+                      id="title"
+                      value={formData.title}
+                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                      placeholder="Título del mensaje..."
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="content">Mensaje</Label>
+                    <Textarea
+                      id="content"
+                      value={formData.content}
+                      onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+                      placeholder="Escribe tu mensaje aquí..."
+                      rows={4}
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button
+                    onClick={saveMessage}
+                    disabled={isSaving || !formData.title.trim() || !formData.content.trim()}
+                    className="bg-gradient-to-r from-pink-400 to-purple-400 hover:from-pink-500 hover:to-purple-500"
+                  >
+                    {isSaving ? "Guardando..." : editingMessage ? "Actualizar" : "Agregar al diario"}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
 
         {/* Lista de mensajes agrupados por fecha */}
-        {Object.keys(groupedMessages).length > 0 ? (
+        {isLoading ? (
+          <Card className="bg-white/70 backdrop-blur-sm border-0 shadow-lg">
+            <CardContent className="text-center py-12">
+              <RefreshCw className="w-8 h-8 mx-auto mb-4 text-purple-400 animate-spin" />
+              <p className="text-gray-600">Cargando mensajes...</p>
+            </CardContent>
+          </Card>
+        ) : Object.keys(groupedMessages).length > 0 ? (
           <div className="space-y-6">
             {Object.entries(groupedMessages).map(([date, dateMessages]) => (
               <div key={date}>
@@ -180,7 +230,7 @@ export default function DiarioPage() {
                             <CardTitle className="text-lg text-gray-800">{message.title}</CardTitle>
                             <div className="flex items-center gap-4 mt-1 text-sm text-gray-500">
                               <span>Por {message.author}</span>
-                              <span>{message.time}</span>
+                              <span>{formatTime(message.created_at)}</span>
                             </div>
                           </div>
                           <div className="flex gap-2">
@@ -195,7 +245,7 @@ export default function DiarioPage() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => deleteMessage(message.id)}
+                              onClick={() => handleDeleteMessage(message.id)}
                               className="text-red-500 hover:text-red-700"
                             >
                               <Trash2 className="w-4 h-4" />

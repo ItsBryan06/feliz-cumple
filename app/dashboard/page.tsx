@@ -6,20 +6,23 @@ import DashboardLayout from "@/components/dashboard-layout"
 import DaysCounter from "@/components/days-counter"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { MessageSquare, Calendar, Heart } from "lucide-react"
-
-interface Message {
-  id: string
-  title: string
-  content: string
-  author: string
-  date: string
-  time: string
-}
+import { getMessages, migrateLocalStorageToSupabase, type Message } from "@/lib/supabase"
 
 export default function DashboardPage() {
   const [user, setUser] = useState("")
   const [recentMessages, setRecentMessages] = useState<Message[]>([])
+  const [totalMessages, setTotalMessages] = useState(0)
+  const [daysTogether, setDaysTogether] = useState(0)
   const router = useRouter()
+
+  // Función para calcular días desde el 10 de marzo de 2025
+  const calculateDaysTogether = () => {
+    const startDate = new Date("2025-03-10T00:00:00.000Z")
+    const now = new Date()
+    const difference = now.getTime() - startDate.getTime()
+    const days = Math.floor(difference / (1000 * 60 * 60 * 24))
+    return days
+  }
 
   useEffect(() => {
     const isAuthenticated = localStorage.getItem("isAuthenticated")
@@ -31,12 +34,42 @@ export default function DashboardPage() {
     }
 
     setUser(currentUser)
+    setDaysTogether(calculateDaysTogether())
 
-    // Cargar mensajes recientes
-    const messages = JSON.parse(localStorage.getItem("messages") || "[]")
-    const recent = messages.slice(-3).reverse() // Últimos 3 mensajes
-    setRecentMessages(recent)
+    // Migrar datos de localStorage a Supabase si es necesario
+    migrateLocalStorageToSupabase()
+
+    // Cargar mensajes recientes desde Supabase
+    loadRecentMessages()
   }, [router])
+
+  const loadRecentMessages = async () => {
+    try {
+      const messages = await getMessages()
+      const recent = messages.slice(0, 3) // Últimos 3 mensajes
+      setRecentMessages(recent)
+      setTotalMessages(messages.length)
+    } catch (error) {
+      console.error("Error loading messages:", error)
+    }
+  }
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString)
+    return date.toLocaleDateString("es-ES", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    })
+  }
+
+  const formatTime = (dateString: string) => {
+    const date = new Date(dateString)
+    return date.toLocaleTimeString("es-ES", {
+      hour: "2-digit",
+      minute: "2-digit",
+    })
+  }
 
   if (!user) return null
 
@@ -80,7 +113,7 @@ export default function DashboardPage() {
                     <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
                       <span>Por {message.author}</span>
                       <span>
-                        {message.date} a las {message.time}
+                        {formatDate(message.created_at)} a las {formatTime(message.created_at)}
                       </span>
                     </div>
                   </div>
@@ -101,14 +134,14 @@ export default function DashboardPage() {
           <Card className="bg-gradient-to-br from-pink-100 to-pink-200 border-0">
             <CardContent className="p-4 text-center">
               <Heart className="w-8 h-8 text-pink-500 mx-auto mb-2" />
-              <p className="text-2xl font-bold text-pink-700">{recentMessages.length}</p>
+              <p className="text-2xl font-bold text-pink-700">{totalMessages}</p>
               <p className="text-sm text-pink-600">Mensajes en el diario</p>
             </CardContent>
           </Card>
           <Card className="bg-gradient-to-br from-purple-100 to-purple-200 border-0">
             <CardContent className="p-4 text-center">
               <Calendar className="w-8 h-8 text-purple-500 mx-auto mb-2" />
-              <p className="text-2xl font-bold text-purple-700">87</p>
+              <p className="text-2xl font-bold text-purple-700">{daysTogether}</p>
               <p className="text-sm text-purple-600">Días juntos</p>
             </CardContent>
           </Card>
